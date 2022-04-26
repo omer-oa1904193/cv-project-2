@@ -7,34 +7,30 @@ HUE_MIN=65;
 HUE_MAX=165;
 SATURATION_MIN=15;
 VALUE_MIN=10;
+
+    generate_greens();
+    
     x=1:30;
     y=zeros(30);
     for i=1:30
         img=imread(sprintf('images/%02d.jpg', i));
-        y(i)=count_green(img);
-        %imshow(segment_image(img));
+        %y(i)=count_green(img);
+        imshow(segment_image(img));
     end
-    bar(x, y, 'BarWidth');
+    plot(x,y);
+    
 end
 
 
 function out=count_green(img)
-global HUE_MIN;
-global HUE_MAX;
-global SATURATION_MIN;
-global VALUE_MIN;
 img=rgb2hsv(img);
 b = ((img(:,:,1)*360)>=HUE_MIN & (img(:,:,1)*360)<=HUE_MAX & (img(:,:,2)*100)>=SATURATION_MIN & (img(:,:,3)*100)>= VALUE_MIN);
 out=sum(sum(sum(b)));
 end
 
 function out=segment_image(img)
-global HUE_MIN;
-global HUE_MAX;
-global SATURATION_MIN;
-global VALUE_MIN;
 img=rgb2hsv(img);
-mask =  ((img(:,:,1)*360)>=HUE_MIN & (img(:,:,1)*360)<=HUE_MAX & (img(:,:,2)*100)>=SATURATION_MIN & (img(:,:,3)*100)>= VALUE_MIN);
+mask = ((img(:,:,1)*360)>=65 & (img(:,:,1)*360)<=165 & (img(:,:,2)*100)>=15 & (img(:,:,3)*100)>= 10);
 out=hsv2rgb(img) .* mask;
 end
 
