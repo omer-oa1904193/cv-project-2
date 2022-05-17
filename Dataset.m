@@ -60,13 +60,14 @@ classdef Dataset<handle
 
             img_bw=bwareafilt(img_bw,1);
             img_bw=(~bwareafilt(~img_bw,1));
-            imshow(img_bw)
+            %imshow(img_bw)
 
             img_lebeled = bwlabel(img_bw);
 
             img_props = regionprops(img_lebeled, 'Circularity','EulerNumber');
             f2=img_props(1).Circularity;
             f3=img_props(1).EulerNumber;
+            %f3=Dataset.wavelet_digest(img);
 
             if green_count<Dataset.COLOR_TO_LUM_MIN_THRESH
                 f1=sum(sum(img_bw));
@@ -87,10 +88,10 @@ classdef Dataset<handle
                 f1s=obj.X_original(:, 1);
                 f2s=obj.X_original(:, 2);
                 f3s=obj.X_original(:, 3);
-                
-                f1s=f1s/max(f1s);
-                f2s=f2s/max(f2s);
-                f3s=(f3s+abs(min(f3s)))/(max(f3s)+abs(min(f3s)));
+
+                f1s=Dataset.normalize_feature(f1s,f1s);
+                f2s=Dataset.normalize_feature(f2s,f2s);
+                f3s=Dataset.normalize_feature(f3s,f3s);
                 obj.X_all = [f1s f2s f3s];
                 obj.Y_all=data(:,size(data,2));
                 return
@@ -107,14 +108,11 @@ classdef Dataset<handle
                 f2s(i)=x(2);
                 f3s(i)=x(3);
             end
-            eval("@(f1,f2,f3) [f1/max(f1s) f2/max(f2s) (f3+abs(min(f3s)))/(max(f3s)+abs(min(f3s)))];")
-            
             obj.X_original= [f1s f2s f3s];
-            f1s=f1s/max(f1s);
-            f2s=f2s/max(f2s);
-            f3s=(f3s+abs(min(f3s)))/(max(f3s+abs(min(f3s))));
+            f1s=Dataset.normalize_feature(f1s,f1s);
+            f2s=Dataset.normalize_feature(f2s,f2s);
+            f3s=Dataset.normalize_feature(f3s,f3s);
             Dataset.plot_features(f1s,f2s,f3s);
-            grid();
             obj.X_all = [f1s f2s f3s];
             obj.Y_all=[repmat(1, 10,1); repmat(2, 10,1); repmat(3, 10,1);];
             data=[obj.X_original obj.Y_all];
@@ -125,7 +123,7 @@ classdef Dataset<handle
             f1s=obj.X_original(:,1);
             f2s=obj.X_original(:,2);
             f3s=obj.X_original(:,3);
-            x=[f1/max(f1s) f2/max(f2s) (f3+abs(min(f3s)))/(max(f3s)+abs(min(f3s)))];
+            x=[Dataset.normalize_feature(f1,f1s) Dataset.normalize_feature(f2,f2s) Dataset.normalize_feature(f3,f3s)];
         end
     end
     
@@ -136,7 +134,13 @@ classdef Dataset<handle
                 (img(:,:,2)*100)>=Dataset.SATURATION_MIN & (img(:,:,3)*100)>= Dataset.VALUE_MIN;
             out=sum(sum(sum(b)));
         end
-
+        function norm = normalize_feature(f, fs)
+            if(any(fs<0))
+                norm=(f+abs(min(fs)))/(max(fs)+abs(min(fs)));
+            else
+                norm=f/max(fs);
+            end
+        end
         function out=color_segment_image(img)
             img=rgb2hsv(img);
             mask = ((img(:,:,1)*360)>=Dataset.GREEN_HUE_MIN & (img(:,:,1)*360)<=Dataset.GREEN_HUE_MAX)&...
@@ -153,7 +157,6 @@ classdef Dataset<handle
         end
         
         function plot_features(feature_1_x,feature_2_y,feature_3_z)
-            close all;
             figure;
             hold on;
             scatter3(feature_1_x(1:10), feature_2_y(1:10),feature_3_z(1:10) ,'r.');
@@ -163,7 +166,18 @@ classdef Dataset<handle
             xlabel('Feature 1');
             ylabel('Feature 2');
             zlabel('Feature 3');
+            grid();
             hold off;
+        end
+        
+        function digest=wavelet_digest(img)
+            [LoD,HiD] = wfilters('haar','d');
+            img_gray=rgb2gray(img);
+            [current,~] = dwt2(img_gray,LoD,HiD,'mode','symh');
+            while size(current,1)>1 || size(current,2)>1
+                [current,~] = dwt2(current,LoD,HiD,'mode','symh');
+            end
+            digest=current;
         end
     end
 end

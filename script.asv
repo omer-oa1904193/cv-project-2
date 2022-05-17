@@ -1,54 +1,32 @@
 function script()
+    %disp("Loading Data...")
     dataset=Dataset(0.7);
-    disp("CMPS 408 Project 2");
-    disp("1- Train and Evaluate classifier");
-    disp("2- Compare 2 classifiers");
-    disp("Please select option: ");
-    choice= input("");
-    while choice<1 || choice>2
-        disp("Please enter a valid value.");
-        choice= input("");
-    end
-    if choice==1
-        disp("Loading Data...")
-        dataset=Dataset(0.7);
-        disp("Please select a classifier: ");
-        classifier=select_classifer();
-        disp("Training...");
-        classifier.train(dataset.X_train, dataset.Y_train);
-        show_eval(dataset, classifier);
-    elseif choice==2
-        disp("Select clssifier 1:");
-        classifier1 = select_classifer();
-        fprintf("\n");
-        disp("Select clssifier 2:");
-        classifier2 = select_classifer();
-        fprintf("\n");
-        metric=input("What is the metric you want to compare? ('MacroF1'(default), 'OverallAccuracy'): ");
-        if isempty(metric)
-            metric='MacroF1';
-        end
-        iterations=input("How many iterations do you want to evaluate for? (default: 100)");
-        if isempty(iterations)
-            iterations=100;
-        end
-        disp("Training...");
-        classifier1.train(dataset.X_train, dataset.Y_train);
-        classifier2.train(dataset.X_train, dataset.Y_train);
-        
-        compare_classifiers(classifier1, classifier2, metric,iterations);
-        
-    end
     
+    %classifier = KNNClassifier(3, true, 'euclidean');
+    %classifier = SVMOVAClassifier();
+    %classifier = LSEOVAClassifier();
+    %classifier = MixedClassifier(3, 'euclidean');
+    %disp("Training...")
+    %classifier.train(dataset.X_train, dataset.Y_train);
+    
+    
+    
+    %classifier1 = MixedClassifier(3, 'euclidean');
+    %classifier2 = KNNClassifier(3, true, 'euclidean');
+    %classifier1.train(dataset.X_train, dataset.Y_train);
+    %classifier2.train(dataset.X_train, dataset.Y_train);
+    
+    %compare_classifiers(classifier1, classifier2, "Macro_F1",100);
 end
 
 function classifier=select_classifer()
-    disp("1- K Nearest Neighbors (KNN)");
-    disp("2- Support Vector Machines (SVM)");
-    disp("3- Least Square Estimate (LSE)");
+    disp("Please select a classifier: ");
+    disp("1- K Nearest Neighbors (KNN): ");
+    disp("2- Support Vector Machines (SVM): ");
+    disp("3- Least Square Estimate (SVM)");
     disp("4- Mixed (KNN/SVM/LSE) with equal weighted voting");
     choice= input("");
-    while choice<1 || choice>4
+    while choice<1 || choice>3
         disp("Please enter a valid value.");
         choice= input("");
     end
@@ -72,26 +50,13 @@ function classifier=select_classifer()
         classifier = SVMOVAClassifier();
     elseif choice==3
         classifier = LSEOVAClassifier();
-    elseif choice==4
-        disp("Please enter hyperparamaters (enter nothing to use default values): ");
-        K=input("K (default: 3): ");
-        if isempty(K)
-            K=3;
-        end
-        distance_metric=input("Distance Metric (default: 'euclidean'): ");
-        if isempty(distance_metric)
-            distance_metric='euclidean';
-        end
-        classifier= MixedClassifier(K, distance_metric); 
     end
 end
 
 function compare_classifiers(classifier1, classifier2, metric, iterations)
-    fprintf("Comparing classifiers %s vs %s with metric %s over %d iterations\n", classifier1.name, classifier2.name, metric,iterations);
+    fprintf("Comparing classifiers %s vs %s with metric: %s over %d iterations\n", classifier1.name, classifier2.name, metric,iterations);
     scores1=zeros(iterations,1);
     scores2=zeros(iterations,1);
-    
-    fprintf("Please wait...\n");
     % evaluation done many times to counter randomness of train/test split
     for i=1:iterations
         dataset=Dataset(0.7);
@@ -99,19 +64,9 @@ function compare_classifiers(classifier1, classifier2, metric, iterations)
         scores2(i)=jsondecode(evaluate_classifier(classifier2, dataset.X_test, dataset.Y_test, false)).(metric);
     end
     avg_score1=sum(scores1)/iterations;
-    avg_score2=sum(scores2)/iterations;
-    
-    fprintf("Please wait...\n");
-    fprintf("Average %s over %d iterations\n", metric, iterations);
+    avg_score2=sum(scores1)/iterations;
     fprintf("%s: %f\n", classifier1.name,avg_score1);
     fprintf("%s: %f\n", classifier2.name,avg_score2);
-    if avg_score1>avg_score2
-        fprintf("%s wins.\n", classifier1.name);
-    elseif avg_score2>avg_score1
-        fprintf("%s wins.\n", classifier2.name);
-    else
-        fprintf("It's a tie.\n");
-    end
 end
 
 function show_eval(dataset,classifier)
@@ -204,5 +159,5 @@ function eval_json=evaluate_classifier(classifier, X_eval, Y_eval, verbose)
         fprintf("Overall Accuracy (ACC): %.4f\n",overall_accuracy);
         fprintf("Macro-F1: %.4f\n",macro_f1);
     end
-    eval_json=sprintf('{"ConfusionMatrix": %s, "Classes": [%s],"OverallAccuracy": %f, "MacroF1":%f}',jsonencode(confusion_matrix),join(class_json_str,","),overall_accuracy,macro_f1);
+    eval_json=sprintf('{"Confusion Matrix": %s, "Classes": [%s],"Overall Accuracy": %f, "Macro-F1":%f}',jsonencode(confusion_matrix),join(class_json_str,","),overall_accuracy,macro_f1);
 end
